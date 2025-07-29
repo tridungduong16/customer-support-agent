@@ -1,1 +1,7 @@
+# Environment files
+.env
 src/.env
+
+# Python cache files
+**/__pycache__/
+*.py[cod]

@@ -1,13 +1,13 @@
 from langgraph.graph import END, START, StateGraph
 
-from src.agents.travel_agent.nodes import (
-    TravelAgentCoordinator,
+from src.agents.nodes import (
+    CustomerSupportAgentCoordinator,
 )  # Your coordinator class
-from src.agents.travel_agent.types import State
+from src.agents.types import State
 
 
 async def build_graph():
-    coordinator = TravelAgentCoordinator()
+    coordinator = CustomerSupportAgentCoordinator()
     await coordinator.async_init()
     builder = StateGraph(State)
     builder.add_edge(START, "router")
@@ -16,4 +16,5 @@ async def build_graph():
     builder.add_node("technical_agent", coordinator.technical_node)
     builder.add_node("billing_agent", coordinator.billing_node)
     builder.add_node("supervisor_agent", coordinator.supervisor_node)
+    builder.add_node("final_response", coordinator.final_response_node)
     return builder.compile()

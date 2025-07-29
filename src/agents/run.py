@@ -2,17 +2,7 @@ import asyncio
 import json
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from markdown import markdown
-from rich.console import Console
-from rich.panel import Panel
-from weasyprint import HTML
-from src.agents.travel_agent.builder import build_graph
-
-console = Console()
-
-def save_markdown_as_pdf(markdown_text: str, output_path: str = "output.pdf") -> None:
-    html = markdown(markdown_text, extensions=["extra", "smarty"])
-    HTML(string=html).write_pdf(output_path)
-    print(f"✅ PDF saved to {output_path}")
+from src.agents.builder import build_graph
 
 
 async def process_question_stream(inputs, agent):
@@ -25,10 +15,7 @@ async def main():
     graph = await build_graph()
     while True:
         user_question = f"""
-        Estimate buget for travel from Ho Chi Minh City to Sydney from June 10, 2025 to June 15, 2025.
-        AND visa requirement for Vietnamese people to travel to Australia.
-        No need other information.
-
+        I was overcharged on my last bill.
         """
         inputs = {
             "messages": [{"role": "user", "content": user_question}],
@@ -47,6 +34,7 @@ async def main():
                 )
                 f.write(str_result)
                 f.write("\n\n")
+            print(result["content"])
             messages.append(result)
         break
 
