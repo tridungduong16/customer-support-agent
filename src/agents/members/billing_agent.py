@@ -11,5 +11,5 @@ class BillingAgent:
         self.agent = create_react_agent(
             model=self.model,
             tools=[],
-            name="budget_agent",
+            name="billing_agent",
         )

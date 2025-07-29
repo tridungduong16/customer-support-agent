@@ -5,11 +5,11 @@ from src.agents.travel_agent.tools.accomodation import AccomodationTool
 from src.agents.travel_agent.tools.flights import FlightTool
 
 
-class BillingAgent:
+class TechnicalAgent:
     def __init__(self, model: ChatOpenAI):
         self.model = model
         self.agent = create_react_agent(
             model=self.model,
             tools=[],
-            name="budget_agent",
+            name="technical_agent",
         )
