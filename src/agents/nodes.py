@@ -1,18 +1,18 @@
 import os
 from typing import Literal
-from langchain_core.messages import HumanMessage
+
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.types import Command
 
-from src.app_config import app_config
-from src.agents.types import Router, State
 from src.agents.members.billing_agent import BillingAgent
 from src.agents.members.general_info_agent import GeneralInfoAgent
-from src.agents.members.technical_agent import TechnicalAgent
 from src.agents.members.supervisor_agent import SupervisorAgent
+from src.agents.members.technical_agent import TechnicalAgent
+from src.agents.types import Router, State
+from src.app_config import app_config
 from src.prompt_lib import ROUTER_PROMPT
-from langchain_core.messages import AIMessage
 
 
 class CustomerSupportAgentCoordinator:
@@ -55,9 +55,6 @@ class CustomerSupportAgentCoordinator:
         return self._invoke_agent(self.technical_agent, state, "technical_agent")
 
     def billing_node(self, state: State) -> Command[Literal["router"]]:
-        import pdb
-
-        pdb.set_trace()
         return self._invoke_agent(self.billing_agent, state, "billing_agent")
 
     def router_node(
@@ -70,6 +67,8 @@ class CustomerSupportAgentCoordinator:
                 messages.append(("human", msg.content))
         response = self.router_agent.invoke(messages)
         next_step = response["next"]
+        import pdb
+        pdb.set_trace()
         if next_step == "FINISH":
             final_content = response["final_output"]
             return Command(
@@ -101,6 +100,9 @@ class CustomerSupportAgentCoordinator:
         supervisor_review = self.supervisor_agent.invoke(
             {"messages": [{"role": "user", "content": agent_msg}]}
         )
+        import pdb
+
+        pdb.set_trace()
         approval_decision = supervisor_review["messages"][-1].content.strip().lower()
         if "approved" in approval_decision:
             return Command(

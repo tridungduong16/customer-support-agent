@@ -84,6 +84,11 @@ You are a technical support agent.
 
 SUPERVISOR_PROMPT = """
 You are a supervisor agent.
+Your task is:
+- Verifies that the response is complete and accurate.
+- Edits or rewrites responses as needed.
+- If the response is not complete or accurate, you should rewrite it.
+- If the response is complete and accurate, you should keep it.
 """
 
 BILLING_PROMPT = """

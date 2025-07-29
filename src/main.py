@@ -1,14 +1,16 @@
 import os
 import shutil
 import time
+
+import requests
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
-import requests
-from src.app_config import app_config
+
 from src.agents.builder import build_graph
 from src.agents.nodes import CustomerSupportAgentCoordinator
-from src.schema import UserThread, UserQuestion, ChatRequest
+from src.app_config import app_config
+from src.schema import ChatRequest, UserQuestion, UserThread
 
 
 async def process_question_stream(inputs, agent):
