@@ -5,14 +5,15 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.types import Command
+from langchain_core.messages import SystemMessage
 
 from src.agents.members.billing_agent import BillingAgent
 from src.agents.members.general_info_agent import GeneralInfoAgent
 from src.agents.members.supervisor_agent import SupervisorAgent
 from src.agents.members.technical_agent import TechnicalAgent
-from src.agents.types import Router, State
+from src.agents.types import Router, State, Supervisor
 from src.app_config import app_config
-from src.prompt_lib import ROUTER_PROMPT
+from src.prompt_lib import ROUTER_PROMPT, SUPERVISOR_PROMPT
 
 
 class CustomerSupportAgentCoordinator:
@@ -20,23 +21,45 @@ class CustomerSupportAgentCoordinator:
         os.environ["OPENAI_API_KEY"] = app_config.OPENAI_API_KEY
         self.model_name = app_config.OPENAI_MODEL_NAME
         self.model = ChatOpenAI(model=self.model_name)
+        # self.RESPONSE_FORMAT = ChatPromptTemplate.from_template(
+        #     "Response from {agent_name} with information {information}\n\nPlease execute the next step.*"
+        # )
         self.RESPONSE_FORMAT = ChatPromptTemplate.from_template(
-            "Response from {agent_name} with information {information}\n\nPlease execute the next step.*"
+            """Response from {agent_name}:
+            \n - {information}
+            With above information please proceed. 
+            
+            """
+
         )
         self.TEAM_MEMBERS = app_config.TEAM_MEMBERS
+        # self.router_agent = ChatOpenAI(
+        #     model=self.model_name, temperature=0.1, top_p=0.1
+        # ).with_structured_output(Router)
         self.router_agent = ChatOpenAI(
-            model=self.model_name, temperature=0.1, top_p=0.1
+            model=self.model_name, 
+            temperature=0.1, 
+            top_p=0.1
+        ).bind(
+            messages=[SystemMessage(content=ROUTER_PROMPT)]
         ).with_structured_output(Router)
 
-    async def async_init(self):
         self.general_info_agent = GeneralInfoAgent().agent
         self.technical_agent = TechnicalAgent().agent
         self.billing_agent = BillingAgent().agent
-        self.supervisor_agent = SupervisorAgent().agent
+        # self.supervisor_agent = SupervisorAgent().with_structured_output(Router)
+
+        self.supervisor_agent = ChatOpenAI(
+            model=self.model_name, 
+            temperature=0.1, 
+            top_p=0.1
+        ).bind(
+            messages=[SystemMessage(content=SUPERVISOR_PROMPT)]
+        ).with_structured_output(Supervisor)
 
     def _invoke_agent(
         self, agent, state: State, agent_name: str
-    ) -> Command[Literal["router"]]:
+    ) -> Command[Literal["supervisor_agent"]]:
         user_msg = state["messages"][-1].content
         result = agent.invoke({"messages": [{"role": "user", "content": user_msg}]})
         response = self.RESPONSE_FORMAT.format(
@@ -45,17 +68,19 @@ class CustomerSupportAgentCoordinator:
         )
         return Command(
             update={"messages": [HumanMessage(content=response, name=agent_name)]},
-            goto="router",
+            goto="supervisor_agent",
         )
 
-    def general_info_node(self, state: State) -> Command[Literal["router"]]:
+    def general_info_node(self, state: State) -> Command[Literal["supervisor_agent"]]:
         return self._invoke_agent(self.general_info_agent, state, "general_info_agent")
 
-    def technical_node(self, state: State) -> Command[Literal["router"]]:
+    def technical_node(self, state: State) -> Command[Literal["supervisor_agent"]]:
         return self._invoke_agent(self.technical_agent, state, "technical_agent")
 
-    def billing_node(self, state: State) -> Command[Literal["router"]]:
-        return self._invoke_agent(self.billing_agent, state, "billing_agent")
+    def billing_node(self, state: State) -> Command[Literal["supervisor_agent"]]:
+        response = self._invoke_agent(self.billing_agent, state, "billing_agent")
+        print("Billing: ", response)
+        return response
 
     def router_node(
         self, state: State
@@ -67,19 +92,6 @@ class CustomerSupportAgentCoordinator:
                 messages.append(("human", msg.content))
         response = self.router_agent.invoke(messages)
         next_step = response["next"]
-        import pdb
-        pdb.set_trace()
-        if next_step == "FINISH":
-            final_content = response["final_output"]
-            return Command(
-                goto="__end__",
-                update={
-                    "messages": [
-                        HumanMessage(content=final_content, name="supervisor")
-                    ],
-                    "next": "__end__",
-                },
-            )
         action = response["action"]
         information = response["information"]
         supervisor_message = f"Conduct the following action: {action} with this information: {information}"
@@ -87,26 +99,40 @@ class CustomerSupportAgentCoordinator:
             goto=next_step,
             update={
                 "messages": [
-                    HumanMessage(content=supervisor_message, name="supervisor")
+                    HumanMessage(content=supervisor_message, name="router")
                 ],
                 "next": next_step,
             },
         )
 
+    def _get_original_user_question(self, state: State) -> str:
+        for msg in state["messages"]:
+            if isinstance(msg, HumanMessage) and msg.name != "router" and not hasattr(msg, 'name') or msg.name is None:
+                return msg.content
+        return state["messages"][0].content if state["messages"] else ""
+
+
     def supervisor_node(
         self, state: State
     ) -> Command[Literal["final_response", "router"]]:
         agent_msg = state["messages"][-1].content
-        supervisor_review = self.supervisor_agent.invoke(
-            {"messages": [{"role": "user", "content": agent_msg}]}
-        )
-        import pdb
+        original_question = self._get_original_user_question(state)
+        import pdb; pdb.set_trace()
 
-        pdb.set_trace()
-        approval_decision = supervisor_review["messages"][-1].content.strip().lower()
-        if "approved" in approval_decision:
+        messages = []
+        messages.append(("human", original_question))
+        messages.append(("ai", agent_msg))
+        response = self.supervisor_agent.invoke(messages)
+        print("--------------------------------")
+        print(response)
+        supervisor_review = response['messages'][-1].content
+        print("Supervisor: ", supervisor_review)
+        # import pdb; pdb.set_trace()
+        # approval_decision = supervisor_review.content.strip().lower()
+        response = supervisor_review['response']
+        if supervisor_review['approval'] == "approved":
             return Command(
-                update={"messages": [AIMessage(content=agent_msg, name="supervisor")]},
+                update={"messages": [AIMessage(content=response, name="supervisor")]},
                 goto="final_response",
             )
         else:
@@ -114,12 +140,12 @@ class CustomerSupportAgentCoordinator:
                 update={
                     "messages": [
                         AIMessage(
-                            content="Supervisor rejected the response. Please re-route.",
+                            content="I'm sorry, I can't help with that. Please try again.",
                             name="supervisor",
                         )
                     ]
                 },
-                goto="router",
+                goto="final_response",
             )
 
     def final_response_node(self, state: State) -> Command[Literal["__end__"]]:

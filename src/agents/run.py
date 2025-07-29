@@ -9,7 +9,8 @@ from src.schema import ConversationInfor, Message, UserQuestion, UserThread
 class AgentManager:
     def __init__(self):
         self.graph = build_graph()
-        self.memory_handler = MemoryHandler()
+        self.memory_handler = MemoryHandler(db_name="test", collection_name="test")
+        self.memory_handler.connect_to_database()
 
     def _save_conversation(self, user_thread: UserThread, question: str, answer: str):
         conversation = ConversationInfor(
@@ -43,7 +44,7 @@ class AgentManager:
 
 if __name__ == "__main__":
     call_agent = AgentManager()
-    question = "The total is $50 with a 10 percent discount. How much do I need to pay?"
+    question = "I want to calculate bill, The total is $50 with a 10 percent discount. How much do I need to pay?"
     user_thread = UserThread(user_id="123", thread_id="456")
     user_question = UserQuestion(user_thread=user_thread, question=question)
     call_agent.process_question_stream(user_question, call_agent.graph)
