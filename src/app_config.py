@@ -71,10 +71,12 @@ class AppConfig(BaseSettings):
         "general_info_agent",
         "technical_agent",
         "billing_agent",
-        "supervisor_agent"
+        "supervisor_agent",
     ]
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
+
+
 # Initialize the configuration
 app_config = AppConfig()

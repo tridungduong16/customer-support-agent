@@ -1,5 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
+from src.prompt_lib import TECHNICAL_PROMPT
+
 class TechnicalAgent:
     def __init__(self):
         self.model = ChatOpenAI(
@@ -11,4 +13,5 @@ class TechnicalAgent:
             model=self.model,
             tools=[],
             name="technical_agent",
+            prompt=TECHNICAL_PROMPT,
         )

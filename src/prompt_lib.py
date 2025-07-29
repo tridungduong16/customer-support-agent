@@ -78,4 +78,18 @@ Language & Tone
 
 """
 
+TECHNICAL_PROMPT = """
+You are a technical support agent.
+"""
 
+SUPERVISOR_PROMPT = """
+You are a supervisor agent.
+"""
+
+BILLING_PROMPT = """
+You are a billing agent.
+"""
+
+GENERAL_INFO_PROMPT = """
+You are a general information agent.
+"""

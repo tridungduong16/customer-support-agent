@@ -1,5 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
+from src.prompt_lib import SUPERVISOR_PROMPT
+
 class SupervisorAgent:
     def __init__(self):
         self.model = ChatOpenAI(
@@ -11,4 +13,5 @@ class SupervisorAgent:
             model=self.model,
             tools=[],
             name="supervisor_agent",
+            prompt=SUPERVISOR_PROMPT,
         )

@@ -14,6 +14,7 @@ from src.agents.members.supervisor_agent import SupervisorAgent
 from src.prompt_lib import ROUTER_PROMPT
 from langchain_core.messages import AIMessage
 
+
 class CustomerSupportAgentCoordinator:
     def __init__(self):
         os.environ["OPENAI_API_KEY"] = app_config.OPENAI_API_KEY
@@ -54,12 +55,14 @@ class CustomerSupportAgentCoordinator:
         return self._invoke_agent(self.technical_agent, state, "technical_agent")
 
     def billing_node(self, state: State) -> Command[Literal["router"]]:
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
         return self._invoke_agent(self.billing_agent, state, "billing_agent")
 
-    def router_node(self, state: State) -> Command[
-        Literal[*app_config.TEAM_MEMBERS, "__end__"]
-    ]:
+    def router_node(
+        self, state: State
+    ) -> Command[Literal[*app_config.TEAM_MEMBERS, "__end__"]]:
         messages = [("system", ROUTER_PROMPT)]
         messages.append(("human", state["messages"][0].content))
         for msg in state["messages"]:
@@ -80,9 +83,7 @@ class CustomerSupportAgentCoordinator:
             )
         action = response["action"]
         information = response["information"]
-        supervisor_message = (
-            f"Conduct the following action: {action} with this information: {information}"
-        )
+        supervisor_message = f"Conduct the following action: {action} with this information: {information}"
         return Command(
             goto=next_step,
             update={
@@ -92,31 +93,36 @@ class CustomerSupportAgentCoordinator:
                 "next": next_step,
             },
         )
-    
-    def supervisor_node(self, state: State) -> Command[Literal["final_response", "router"]]:
+
+    def supervisor_node(
+        self, state: State
+    ) -> Command[Literal["final_response", "router"]]:
         agent_msg = state["messages"][-1].content
-        supervisor_review = self.supervisor_agent.invoke({
-            "messages": [{"role": "user", "content": agent_msg}]
-        })
+        supervisor_review = self.supervisor_agent.invoke(
+            {"messages": [{"role": "user", "content": agent_msg}]}
+        )
         approval_decision = supervisor_review["messages"][-1].content.strip().lower()
         if "approved" in approval_decision:
             return Command(
-                update={
-                    "messages": [AIMessage(content=agent_msg, name="supervisor")]
-                },
+                update={"messages": [AIMessage(content=agent_msg, name="supervisor")]},
                 goto="final_response",
             )
         else:
             return Command(
                 update={
-                    "messages": [AIMessage(content="Supervisor rejected the response. Please re-route.", name="supervisor")]
+                    "messages": [
+                        AIMessage(
+                            content="Supervisor rejected the response. Please re-route.",
+                            name="supervisor",
+                        )
+                    ]
                 },
                 goto="router",
             )
-        
+
     def final_response_node(self, state: State) -> Command[Literal["__end__"]]:
         final_msg = state["messages"][-1].content
         return Command(
             update={"messages": [AIMessage(content=final_msg, name="final_response")]},
-            goto="__end__"
+            goto="__end__",
         )
