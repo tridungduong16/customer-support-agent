@@ -125,12 +125,12 @@ class CustomerSupportAgentCoordinator:
         response = self.supervisor_agent.invoke(messages)
         print("--------------------------------")
         print(response)
-        supervisor_review = response['messages'][-1].content
-        print("Supervisor: ", supervisor_review)
+        # supervisor_review = response['
+        # print("Supervisor: ", supervisor_review)
         # import pdb; pdb.set_trace()
         # approval_decision = supervisor_review.content.strip().lower()
-        response = supervisor_review['response']
-        if supervisor_review['approval'] == "approved":
+        response = response['response']
+        if response['approval'] == "approved":
             return Command(
                 update={"messages": [AIMessage(content=response, name="supervisor")]},
                 goto="final_response",
@@ -149,6 +149,7 @@ class CustomerSupportAgentCoordinator:
             )
 
     def final_response_node(self, state: State) -> Command[Literal["__end__"]]:
+        import pdb; pdb.set_trace()
         final_msg = state["messages"][-1].content
         return Command(
             update={"messages": [AIMessage(content=final_msg, name="final_response")]},
