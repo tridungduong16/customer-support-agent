@@ -1,30 +1,13 @@
 from typing import List, Optional
 
 from pydantic import BaseModel
+from pydantic import Field
 
 
-class ForkliftProduct(BaseModel):
-    product_id: str
-    load_capacity: Optional[float] = None
-    load_center: Optional[float] = None
-    wheelbase: Optional[float] = None
-    height_mast_lowered: Optional[float] = None
-    height_mast_extended: Optional[float] = None
-    height_overhead_guard: Optional[float] = None
-    height_of_seat: Optional[float] = None
-    free_lift: Optional[float] = None
-    lift: Optional[float] = None
-    length_to_forkface: Optional[float] = None
-    overall_width: Optional[float] = None
-    turning_radius: Optional[float] = None
-
-
-class ListForkliftProduct(BaseModel):
-    products: List[ForkliftProduct]
-
-
-class PdfParserRequest(BaseModel):
-    pdf_path: str
+class ChatRequest(BaseModel):
+    question: str = Field(
+        description="I bought 3 items: a jacket for $180, a pair of shoes for $120, and a backpack for $60. I received a 15% discount on the total bill and then had to pay a 10% sales tax on the discounted amount. How much do I need to pay in total?"
+    )
 
 
 class Message(BaseModel):
@@ -45,8 +28,4 @@ class ConversationInfor(BaseModel):
 
 class UserQuestion(BaseModel):
     user_thread: UserThread
-    question: str
-
-
-class ChatRequest(BaseModel):
     question: str

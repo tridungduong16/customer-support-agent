@@ -1,32 +1,19 @@
-import os
-import shutil
 import time
-
-import requests
 import uvicorn
 from fastapi import FastAPI
-from pydantic import BaseModel
-
-from src.agents.builder import build_graph
-from src.agents.nodes import CustomerSupportAgentCoordinator
-from src.app_config import app_config
-from src.schema import ChatRequest, UserQuestion, UserThread
+from src.schema import ChatRequest, UserQuestion, UserThread, ChatRequest
 from src.agents.run import AgentManager
-call_agent = AgentManager()
+from fastapi.middleware.cors import CORSMiddleware
 
-async def process_question_stream(inputs, agent):
-    async for s in agent.astream(inputs, stream_mode="values"):
-        message = s["messages"][-1]
-        yield {"content": message.content, "agent_name": getattr(message, "name", None)}
-
-
-coordinator = CustomerSupportAgentCoordinator()
 app = FastAPI()
-graph = build_graph()
-
-
-class ChatRequest(BaseModel):
-    question: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or restrict to ["http://localhost:3000"] etc.
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+call_agent = AgentManager()
 
 
 @app.get("/")
@@ -38,7 +25,7 @@ async def root():
 @app.post("/chat")
 async def chat(requets: ChatRequest):
     start_time = time.time()
-    user_thread = UserThread(user_id="121", thread_id="456")
+    user_thread = UserThread(user_id="111", thread_id="111")
     user_question = UserQuestion(user_thread=user_thread, question=requets.question)
     res = call_agent.process_question_stream(user_question, call_agent.graph)
     end_time = time.time()
