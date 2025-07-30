@@ -29,19 +29,15 @@ class CustomerSupportAgentCoordinator:
             """
         )
         self.TEAM_MEMBERS = app_config.TEAM_MEMBERS
-        self.router_agent = (
-            ChatOpenAI(model=self.model_name, temperature=0.1, top_p=0.1)
-            .bind(messages=[SystemMessage(content=ROUTER_PROMPT)])
-            .with_structured_output(Router)
-        )
+        self.router_agent = ChatOpenAI(
+            model=self.model_name, temperature=0.1, top_p=0.1
+        ).with_structured_output(Router)
         self.general_info_agent = GeneralInfoAgent().agent
         self.technical_agent = TechnicalAgent().agent
         self.billing_agent = BillingAgent().agent
-        self.supervisor_agent = (
-            ChatOpenAI(model=self.model_name, temperature=0.1, top_p=0.1)
-            .bind(messages=[SystemMessage(content=SUPERVISOR_PROMPT)])
-            .with_structured_output(Supervisor)
-        )
+        self.supervisor_agent = ChatOpenAI(
+            model=self.model_name, temperature=0.1, top_p=0.1
+        ).with_structured_output(Supervisor)
 
     def _invoke_agent(
         self, agent, state: State, agent_name: str
@@ -104,8 +100,10 @@ class CustomerSupportAgentCoordinator:
         agent_msg = state["messages"][-1].content
         original_question = self._get_original_user_question(state)
         messages = []
+        messages.append(("system", SUPERVISOR_PROMPT))
         messages.append(("human", original_question))
         messages.append(("ai", agent_msg))
+        # import pdb; pdb.set_trace()
         response = self.supervisor_agent.invoke(messages)
         print("--------------------------------")
         print(response)

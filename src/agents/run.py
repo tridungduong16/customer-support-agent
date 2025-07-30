@@ -54,7 +54,7 @@ if __name__ == "__main__":
     call_agent = AgentManager()
     question = "I want to calculate bill, The total is $50 with a 10 percent discount. How much do I need to pay?"
     question = """
-    I bought 3 items: a jacket for $80, a pair of shoes for $120, and a backpack for $60. I received a 15% discount on the total bill and then had to pay a 10% sales tax on the discounted amount. How much do I need to pay in total?
+    I bought 3 items: a jacket for $180, a pair of shoes for $120, and a backpack for $60. I received a 15% discount on the total bill and then had to pay a 10% sales tax on the discounted amount. How much do I need to pay in total?
     """
     user_thread = UserThread(user_id="1211", thread_id="456")
     user_question = UserQuestion(user_thread=user_thread, question=question)
