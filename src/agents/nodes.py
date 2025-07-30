@@ -117,18 +117,12 @@ class CustomerSupportAgentCoordinator:
     ) -> Command[Literal["final_response", "router"]]:
         agent_msg = state["messages"][-1].content
         original_question = self._get_original_user_question(state)
-        import pdb; pdb.set_trace()
-
         messages = []
         messages.append(("human", original_question))
         messages.append(("ai", agent_msg))
         response = self.supervisor_agent.invoke(messages)
         print("--------------------------------")
         print(response)
-        # supervisor_review = response['
-        # print("Supervisor: ", supervisor_review)
-        # import pdb; pdb.set_trace()
-        # approval_decision = supervisor_review.content.strip().lower()
         response = response['response']
         if response['approval'] == "approved":
             return Command(
@@ -149,7 +143,6 @@ class CustomerSupportAgentCoordinator:
             )
 
     def final_response_node(self, state: State) -> Command[Literal["__end__"]]:
-        import pdb; pdb.set_trace()
         final_msg = state["messages"][-1].content
         return Command(
             update={"messages": [AIMessage(content=final_msg, name="final_response")]},
