@@ -11,7 +11,8 @@ from src.agents.builder import build_graph
 from src.agents.nodes import CustomerSupportAgentCoordinator
 from src.app_config import app_config
 from src.schema import ChatRequest, UserQuestion, UserThread
-
+from src.agents.run import AgentManager
+call_agent = AgentManager()
 
 async def process_question_stream(inputs, agent):
     async for s in agent.astream(inputs, stream_mode="values"):
@@ -36,21 +37,13 @@ async def root():
 
 @app.post("/chat")
 async def chat(requets: ChatRequest):
-    user_thread = UserThread(user_id="1", thread_id="1", agent_name="calculator")
-    user_question = UserQuestion(user_thread=user_thread, question=requets.question)
     start_time = time.time()
-    message = f"""
-    {requests.question}
-    """
-    result = graph.invoke(
-        {
-            "messages": [{"role": "user", "content": message}],
-        }
-    )
+    user_thread = UserThread(user_id="121", thread_id="456")
+    user_question = UserQuestion(user_thread=user_thread, question=requets.question)
+    res = call_agent.process_question_stream(user_question, call_agent.graph)
     end_time = time.time()
     time_taken = end_time - start_time
-    print(f"Time taken: {time_taken} seconds")
-    return {"message": result["messages"][-1].content, "time_taken": time_taken}
+    return {"message": res, "time_taken": time_taken}
 
 
 if __name__ == "__main__":

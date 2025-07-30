@@ -13,9 +13,11 @@ class Router(TypedDict):
     action: str
     information: str
 
+
 class Supervisor(TypedDict):
     approval: Literal["approved", "rejected"]
     response: str
+
 
 class State(MessagesState):
     next: str

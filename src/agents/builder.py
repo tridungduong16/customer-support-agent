@@ -1,7 +1,6 @@
 from langgraph.graph import END, START, StateGraph
 
-from src.agents.nodes import \
-    CustomerSupportAgentCoordinator
+from src.agents.nodes import CustomerSupportAgentCoordinator
 from src.agents.types import State
 
 

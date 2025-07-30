@@ -21,41 +21,27 @@ class CustomerSupportAgentCoordinator:
         os.environ["OPENAI_API_KEY"] = app_config.OPENAI_API_KEY
         self.model_name = app_config.OPENAI_MODEL_NAME
         self.model = ChatOpenAI(model=self.model_name)
-        # self.RESPONSE_FORMAT = ChatPromptTemplate.from_template(
-        #     "Response from {agent_name} with information {information}\n\nPlease execute the next step.*"
-        # )
         self.RESPONSE_FORMAT = ChatPromptTemplate.from_template(
             """Response from {agent_name}:
             \n - {information}
-            With above information please proceed. 
+            With above information please provide the final answer to the user.
             
             """
-
         )
         self.TEAM_MEMBERS = app_config.TEAM_MEMBERS
-        # self.router_agent = ChatOpenAI(
-        #     model=self.model_name, temperature=0.1, top_p=0.1
-        # ).with_structured_output(Router)
-        self.router_agent = ChatOpenAI(
-            model=self.model_name, 
-            temperature=0.1, 
-            top_p=0.1
-        ).bind(
-            messages=[SystemMessage(content=ROUTER_PROMPT)]
-        ).with_structured_output(Router)
-
+        self.router_agent = (
+            ChatOpenAI(model=self.model_name, temperature=0.1, top_p=0.1)
+            .bind(messages=[SystemMessage(content=ROUTER_PROMPT)])
+            .with_structured_output(Router)
+        )
         self.general_info_agent = GeneralInfoAgent().agent
         self.technical_agent = TechnicalAgent().agent
         self.billing_agent = BillingAgent().agent
-        # self.supervisor_agent = SupervisorAgent().with_structured_output(Router)
-
-        self.supervisor_agent = ChatOpenAI(
-            model=self.model_name, 
-            temperature=0.1, 
-            top_p=0.1
-        ).bind(
-            messages=[SystemMessage(content=SUPERVISOR_PROMPT)]
-        ).with_structured_output(Supervisor)
+        self.supervisor_agent = (
+            ChatOpenAI(model=self.model_name, temperature=0.1, top_p=0.1)
+            .bind(messages=[SystemMessage(content=SUPERVISOR_PROMPT)])
+            .with_structured_output(Supervisor)
+        )
 
     def _invoke_agent(
         self, agent, state: State, agent_name: str
@@ -86,10 +72,8 @@ class CustomerSupportAgentCoordinator:
         self, state: State
     ) -> Command[Literal[*app_config.TEAM_MEMBERS, "__end__"]]:
         messages = [("system", ROUTER_PROMPT)]
-        messages.append(("human", state["messages"][0].content))
         for msg in state["messages"]:
-            if msg.name in self.TEAM_MEMBERS:
-                messages.append(("human", msg.content))
+            messages.append(("human", msg.content))
         response = self.router_agent.invoke(messages)
         next_step = response["next"]
         action = response["action"]
@@ -98,19 +82,21 @@ class CustomerSupportAgentCoordinator:
         return Command(
             goto=next_step,
             update={
-                "messages": [
-                    HumanMessage(content=supervisor_message, name="router")
-                ],
+                "messages": [HumanMessage(content=supervisor_message, name="router")],
                 "next": next_step,
             },
         )
 
     def _get_original_user_question(self, state: State) -> str:
         for msg in state["messages"]:
-            if isinstance(msg, HumanMessage) and msg.name != "router" and not hasattr(msg, 'name') or msg.name is None:
+            if (
+                isinstance(msg, HumanMessage)
+                and msg.name != "router"
+                and not hasattr(msg, "name")
+                or msg.name is None
+            ):
                 return msg.content
-        return state["messages"][0].content if state["messages"] else ""
-
+        return state["messages"][-1].content if state["messages"] else ""
 
     def supervisor_node(
         self, state: State
@@ -123,10 +109,14 @@ class CustomerSupportAgentCoordinator:
         response = self.supervisor_agent.invoke(messages)
         print("--------------------------------")
         print(response)
-        response = response['response']
-        if response['approval'] == "approved":
+        # import pdb; pdb.set_trace()
+        if response["approval"] == "approved":
             return Command(
-                update={"messages": [AIMessage(content=response, name="supervisor")]},
+                update={
+                    "messages": [
+                        AIMessage(content=response["response"], name="supervisor")
+                    ]
+                },
                 goto="final_response",
             )
         else:
